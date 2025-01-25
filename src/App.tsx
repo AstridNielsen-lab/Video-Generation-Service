@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Video, Download, Trash2, Loader2, Phone, Globe } from 'lucide-react';
 import { Message, VideoState } from './types';
 import { API_URL, API_KEY } from './config';
+import { generateVideo } from './services/videoService';
+import { Canvas } from './components/Canvas';
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,7 +35,8 @@ function App() {
     setVideoState(prev => ({ ...prev, status: 'generating' }));
 
     try {
-      const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+      // First, get the AI response
+      const aiResponse = await fetch(`${API_URL}?key=${API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -47,27 +50,28 @@ function App() {
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (!aiResponse.ok) {
+        throw new Error(`AI API error: ${aiResponse.status}`);
       }
 
-      const data = await response.json();
+      const aiData = await aiResponse.json();
       
-      if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-        throw new Error('Invalid response format from API');
+      if (!aiData.candidates || !aiData.candidates[0]?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response format from AI API');
       }
 
       const assistantMessage: Message = {
-        content: data.candidates[0].content.parts[0].text,
+        content: aiData.candidates[0].content.parts[0].text,
         role: 'assistant',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
       
-      // For demonstration, using a placeholder video
+      // Then, generate the video
+      const videoResponse = await generateVideo(input);
       setVideoState({
-        url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1200&h=800&fit=crop',
+        url: videoResponse.videoUrl,
         status: 'ready'
       });
     } catch (error) {
@@ -84,6 +88,25 @@ function App() {
   const handleClear = () => {
     setMessages([]);
     setVideoState({ url: null, status: 'idle' });
+  };
+
+  const handleDownload = async () => {
+    if (videoState.url) {
+      try {
+        const response = await fetch(videoState.url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'generated-video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error downloading video:', error);
+      }
+    }
   };
 
   return (
@@ -161,11 +184,7 @@ function App() {
                     <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                   </div>
                 ) : videoState.url ? (
-                  <img
-                    src={videoState.url}
-                    alt="Video preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <Canvas videoUrl={videoState.url} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <p>No video generated yet</p>
@@ -183,6 +202,7 @@ function App() {
                   Generate Video
                 </button>
                 <button
+                  onClick={handleDownload}
                   disabled={!videoState.url}
                   className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
