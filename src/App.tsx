@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Video, Download, Trash2, Loader2 } from 'lucide-react';
+import { Send, Video, Download, Trash2, Loader2, Phone, Globe } from 'lucide-react';
 import { Message, VideoState } from './types';
 import { API_URL, API_KEY } from './config';
 
@@ -87,7 +87,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -98,7 +98,7 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Chat Section */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -200,6 +200,38 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-8">
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-semibold text-gray-900">Like Look Solutions</h3>
+              <p className="text-gray-600">Desenvolvido por Julio Campos Machado</p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <a
+                href="https://likelook.wixsite.com/solutions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              >
+                <Globe className="w-5 h-5" />
+                Visite nosso site
+              </a>
+              <a
+                href="https://wa.me/5511970603441"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-green-600 hover:text-green-700"
+              >
+                <Phone className="w-5 h-5" />
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
