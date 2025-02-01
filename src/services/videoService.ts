@@ -1,49 +1,78 @@
-import { VideoGenerationRequest, VideoGenerationResponse } from '../types';
-import { VIDEO_API_URL, API_KEY } from '../config';
+import express from 'express';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
 
-// Mock video URLs for testing
-const MOCK_VIDEOS = [
-  'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1200&h=800&fit=crop',
-  'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=800&fit=crop',
-  'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?w=1200&h=800&fit=crop'
-];
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-export async function generateVideo(prompt: string): Promise<VideoGenerationResponse> {
-  try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For testing, randomly select a mock video
-    const randomVideo = MOCK_VIDEOS[Math.floor(Math.random() * MOCK_VIDEOS.length)];
-    
-    return {
-      videoUrl: randomVideo,
-      status: 'success'
-    };
-    
-    // Uncomment and update VIDEO_API_URL when your C# backend is ready
-    /*
-    const request: VideoGenerationRequest = {
-      prompt,
-      apiKey: API_KEY
-    };
+// Configuração da API Gemini
+const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
+const API_KEY = "AIzaSyAuFi5KtPsMJI5IC8c5FjvYD5IbuBdwH_U";
 
-    const response = await fetch(VIDEO_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request)
-    });
+app.use(express.json());
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+// Função para gerar código binário
+async function generateBinaryCode(prompt) {
+    try {
+        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data.generatedBinary || "1101010110100110"; // Exemplo de fallback
+    } catch (error) {
+        console.error("Erro ao gerar código binário:", error);
+        throw error;
     }
-
-    return await response.json();
-    */
-  } catch (error) {
-    console.error('Error generating video:', error);
-    throw error;
-  }
 }
+
+// Função para converter binário em imagem
+function binaryToImage(binaryCode, outputPath) {
+    return new Promise((resolve, reject) => {
+        const buffer = Buffer.from(binaryCode, 'binary');
+        fs.writeFile(outputPath, buffer, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(outputPath);
+            }
+        });
+    });
+}
+
+// Endpoint para gerar vídeo
+app.post('/generate-video', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        const binaryCode = await generateBinaryCode(prompt);
+        const imagePath = path.join(__dirname, 'output.png');
+        await binaryToImage(binaryCode, imagePath);
+
+        res.json({
+            message: 'Imagem gerada com sucesso!',
+            imageUrl: `http://localhost:${PORT}/image`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Servir a imagem gerada
+app.get('/image', (req, res) => {
+    const imagePath = path.join(__dirname, 'output.png');
+    res.sendFile(imagePath);
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+});
