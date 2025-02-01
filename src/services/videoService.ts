@@ -29,7 +29,7 @@ async function generateBinaryCode(prompt) {
         }
         
         const data = await response.json();
-        return data.generatedBinary || "1101010110100110"; // Exemplo de fallback
+        return data.generatedBinary || "iVBORw0KGgoAAAANSUhEUgAAAPoAAADICAYAAADBXvybAAAAAXNSR0IArs4c6QAAGf5JREFUeF7tXQn8ttWYvq4xzDRGkvAjW0QkEomyTCJKtkSihSSaSGUpjKIhe9EmKiZtKiVZi2RN2ZeUSpItZB0xMeSa3"; // Exemplo de fallback
     } catch (error) {
         console.error("Erro ao gerar código binário:", error);
         throw error;
